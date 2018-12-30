@@ -16,12 +16,16 @@ const arc = d3.arc()
     .innerRadius(dims.innerRadius)
     .outerRadius(dims.outerRadius);
 
+const ribbon = d3.ribbon()
+    .radius(dims.innerRadius);
+
 const update = data => {
     // Update scales
 
     // Link data
     const chordData = chord(data);
     const chordGroupData = chordData.groups;
+    const ribbons = graph.selectAll('.ribbon').data(chordData);
     const arcs = graph.selectAll('.arc').data(chordGroupData);
 
     // Exit selection
@@ -35,6 +39,13 @@ const update = data => {
             .attr('stroke', 'purple')
             .attr('class', 'arc')
             .attr('d', arc);
+
+    ribbons.enter()
+        .append('path')
+            .attr('fill', 'purple')
+            .attr('stroke', 'purple')
+            .attr('class', 'ribbon')
+            .attr('d', ribbon);
 
     // Other elements
 };

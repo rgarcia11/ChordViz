@@ -19,31 +19,46 @@ const arc = d3.arc()
 const ribbon = d3.ribbon()
     .radius(dims.innerRadius);
 
+const colour = d3.scaleOrdinal([
+    '#a6611a',
+    '#dfc27d',
+    '#80cdc1',
+    '#018571'
+]);
+
 const update = data => {
-    // Update scales
 
     // Link data
     const chordData = chord(data);
     const chordGroupData = chordData.groups;
+
     const ribbons = graph.selectAll('.ribbon').data(chordData);
     const arcs = graph.selectAll('.arc').data(chordGroupData);
 
+    // Update scales
+    colour.domain(chordGroupData.map(chordGroupMember => chordGroupMember.index));
+
     // Exit selection
+    ribbons.exit().remove();
+    arcs.exit().remove();
 
     // Current selection
+    ribbons.remove();
+    arcs.remove();
 
     // Enter selection
     arcs.enter()
         .append('path')
-            .attr('fill', 'purple')
-            .attr('stroke', 'purple')
+            .attr('fill', d => colour(d.index))
+            .attr('stroke', d => colour(d.index))
             .attr('class', 'arc')
             .attr('d', arc);
 
     ribbons.enter()
         .append('path')
-            .attr('fill', 'purple')
-            .attr('stroke', 'purple')
+            .attr('fill', d => colour(d.source.index))
+            .attr('stroke', d => colour(d.source.index))
+            .style('opacity', 0.5)
             .attr('class', 'ribbon')
             .attr('d', ribbon);
 

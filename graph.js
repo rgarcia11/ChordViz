@@ -1,4 +1,4 @@
-const dims = { height: 600, width: 600, innerRadius:  270, outerRadius: 290, padAngle: 0.025 };
+const dims = { height: 700, width: 700, innerRadius:  270, outerRadius: 290, padAngle: 0.075 };
 const cent = { x: (dims.width / 2 + 5), y: (dims.height / 2 + 5) }
 
 const svg = d3.selectAll('.canvas')
@@ -28,7 +28,7 @@ const colour = d3.scaleOrdinal([
     '#018571'
 ]);
 
-formatValue = d3.formatPrefix(",.0", 1e3);
+const kiloFormat = d3.formatPrefix(',.0', 1e3);
 
 const update = data => {
 
@@ -42,7 +42,7 @@ const update = data => {
 
     const ribbons = graph.selectAll('.ribbon').data(chordData);
     const arcs = graph.selectAll('.arc').data(chordGroupData);
-    const axis = circularAxisGroup.selectAll('.tick').data(chordTicks);
+    const axis = circularAxisGroup.selectAll('g').data(chordTicks);
 
     // Update scales domains
     colour.domain(chordGroupData.map(chordGroupMember => chordGroupMember.index));
@@ -71,20 +71,26 @@ const update = data => {
             .attr('class', 'ribbon')
             .attr('d', ribbon);
 
-    axis
-    axis.enter()
+    ticks = axis
+        .enter()
+        .append('g')
+        .attr('transform', d => `rotate(${d.angle * 180 / Math.PI - 90}) translate(${dims.outerRadius},0)`);
+
+    ticks
         .append('line')
         .attr('class', 'tick')
         .attr('stroke', '#000')
-        .attr('x2', 5)
-            .attr('transform', d => `rotate(${d.angle * 180 / Math.PI - 90}) translate(${dims.outerRadius},0)`);
-    console.log(axis)
+        .attr('x2', 5);
     
-    axis.enter()
+    ticks
         .filter(d => d.value % 5000 === 0)
         .append('text')
-        .attr('transform', d => `rotate(${d.angle * 180 / Math.PI - 90}) translate(${dims.outerRadius},0)`)
-        .text(d => d.value)
+        .attr('class', 'tickLabel')
+        .attr('x', 8)
+        .attr('y', 5)
+        .attr('transform', d => d.angle > Math.PI ? `rotate(180) translate(-15)` : null)
+        .attr('text-anchor', d => d.angle > Math.PI ? 'end' : null)
+        .text(d => kiloFormat(d.value))
 
     // Other elements
 };
@@ -96,5 +102,7 @@ const createTicks = (d, step) => {
         return {value: value, angle: value * k + d.startAngle}
     });
 };
+
+
 
 update(matrix);

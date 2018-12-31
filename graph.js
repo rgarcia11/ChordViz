@@ -1,4 +1,4 @@
-const dims = { height: 700, width: 700, innerRadius:  270, outerRadius: 290, padAngle: 0.075 };
+const dims = { height: 700, width: 700, innerRadius:  270, outerRadius: 290, padAngle: 0.075, opacity: 0.7, fadedOpacity: 0.2, focusOpacity: 0.9 };
 const cent = { x: (dims.width / 2 + 5), y: (dims.height / 2 + 5) }
 
 const svg = d3.selectAll('.canvas')
@@ -12,7 +12,8 @@ const graph = svg.append('g')
 const circularAxisGroup = graph.append('g').attr('class', 'axis');
 
 const chord = d3.chord()
-    .padAngle(dims.padAngle);
+    .padAngle(dims.padAngle)
+    .sortSubgroups(d3.descending);
 
 const arc = d3.arc()
     .innerRadius(dims.innerRadius)
@@ -22,10 +23,10 @@ const ribbon = d3.ribbon()
     .radius(dims.innerRadius);
 
 const colour = d3.scaleOrdinal([
-    '#a6611a',
-    '#dfc27d',
-    '#80cdc1',
-    '#018571'
+    '#66c2a5',
+    '#fc8d62',
+    '#8da0cb',
+    '#e78ac3'
 ]);
 
 const kiloFormat = d3.formatPrefix(',.0', 1e3);
@@ -57,17 +58,20 @@ const update = data => {
 
     // Enter selection
     arcs.enter()
+        .append('g')
         .append('path')
             .attr('fill', d => colour(d.index))
             .attr('stroke', d => d3.color(colour(d.index)).darker(1))
+            .style('opacity', dims.opacity)
             .attr('class', 'arc')
             .attr('d', arc);
 
     ribbons.enter()
+        .append('g')
         .append('path')
-            .attr('fill', d => colour(d.source.index))
-            .attr('stroke', d => d3.color(colour(d.source.index)).darker(1))
-            .style('opacity', 0.5)
+            .attr('fill', d => colour(d.target.index))
+            .attr('stroke', d => d3.color(colour(d.target.index)).darker(1))
+            .style('opacity', dims.opacity)
             .attr('class', 'ribbon')
             .attr('d', ribbon);
 
@@ -92,7 +96,35 @@ const update = data => {
         .attr('text-anchor', d => d.angle > Math.PI ? 'end' : null)
         .text(d => kiloFormat(d.value))
 
-    // Other elements
+    // Animations
+    graph.selectAll('.ribbon')
+        .on('mouseover', (d, i, n) => {
+            setOpacity(graph.selectAll('.arc,.ribbon'), dims.fadedOpacity);
+            setOpacity(graph.selectAll('.arc').filter(arc => arc.index === d.target.index || arc.index === d.source.index), dims.focusOpacity);
+            setOpacity(d3.select(n[i]), dims.focusOpacity);
+        })
+        .on('mouseleave', (d, i, n) => {
+            setOpacity(graph.selectAll('.arc,.ribbon'), dims.opacity);
+        });
+    
+    graph.selectAll('.arc')
+        .on('mouseover', (d, i, n) => {
+            setOpacity(graph.selectAll('.arc,.ribbon'), dims.fadedOpacity);
+            let arcIndexesToFocus = [];
+            setOpacity(graph.selectAll('.ribbon')
+                .filter(ribbon => {
+                    if(ribbon.source.index === d.index || ribbon.target.index === d.index){
+                        focus(d3.select(n[ribbon.source.index]));
+                        focus(d3.select(n[ribbon.target.index]))
+                        return true;
+                    }
+                    return false;
+                }), dims.focusOpacity);
+            arcIndexesToFocus.forEach(index => setOpacity(d3.select(n[index]), dims.focusOpacity));
+        })
+        .on('mouseleave', (d, i, n) => {
+            setOpacity(graph.selectAll('.arc,.ribbon'), dims.opacity);
+        })
 };
 
 
@@ -103,6 +135,15 @@ const createTicks = (d, step) => {
     });
 };
 
+const fade = (elements) => setOpacity(elements, dims.fadedOpacity);
 
+const focus = (elements) => setOpacity(elements, dims.focusOpacity);
+
+const normalOpacity = (elements) => setOpacity(elements, dims.opacity);
+
+const setOpacity = (elements, opacity) => {
+    elements.transition().duration(50)
+        .style('opacity', opacity);
+}
 
 update(matrix);
